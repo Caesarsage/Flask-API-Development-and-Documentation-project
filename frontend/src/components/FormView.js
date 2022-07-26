@@ -17,16 +17,16 @@ class FormView extends Component {
   componentDidMount() {
     $.ajax({
       url: `/categories`, //TODO: update request URL
-      type: 'GET',
+      type: "GET",
       success: (result) => {
-        this.setState({ categories: result.categories });
-        return;
+        this.setState({ categories: result.categories })
+        return
       },
       error: (error) => {
-        alert('Unable to load categories. Please try your request again');
-        return;
+        alert("Unable to load categories. Please try your request again")
+        return
       },
-    });
+    })
   }
 
   submitQuestion = (event) => {

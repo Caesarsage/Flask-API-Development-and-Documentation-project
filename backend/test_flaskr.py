@@ -17,17 +17,17 @@ class TriviaTestCase(unittest.TestCase):
         self.DB_HOST = os.getenv('DB_HOST', 'localhost:5432')
         self.DB_USER = os.getenv('DB_USER', 'postgres')
         self.DB_PASSWORD = os.getenv('DB_PASSWORD', 'password')
-        self.DB_NAME = os.getenv('DB_NAME', 'trivia_test')
+        self.DB_NAME = os.getenv('DB_NAME', 'trivia')
         self.database_path = "postgresql://{}:{}@{}/{}".format(
             self.DB_USER, self.DB_PASSWORD, self.DB_HOST, self.DB_NAME
         )
         setup_db(self.app, self.database_path)
 
         self.new_question = {
-            "question": "In what year was the NG independent ?",
-            "answer": "1996",
+            "question": "In what year was the last World Cup?",
+            "answer": "2018",
             "difficulty": 2,
-            "category": 3
+            "category": 6
         }
 
         # binds the app to the current context
@@ -55,16 +55,15 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertTrue(data["categories"])
         self.assertTrue(isinstance(data["categories"], dict))
 
     def test_404_requesting_unknown_category(self):
-        res = self.client().get("/categories/1")
+        res = self.client().get("/categories/1000000")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data["success"], False)
-        self.assertEqual(data["message"], "resource not found")
+        self.assertEqual(data["message"], "Could not find the resource")
 
     # Test for endpoints that handles GET requests for questions
 
@@ -79,12 +78,12 @@ class TriviaTestCase(unittest.TestCase):
         # self.assertTrue(data["current_category"])
 
     def test_404_sent_requesting_beyond_valid_page(self):
-        res = self.client().get("/questions?page=1000")
+        res = self.client().get("/questions?page=1000000000")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data["success"], False)
-        self.assertEqual(data["message"], "resource not found")
+        self.assertEqual(data["message"], "Could not find the resource")
 
     # Test for endpoints to DELETE a question using a question ID.
     # A question is deleted from the database in each attempt.
@@ -108,7 +107,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 422)
         self.assertEqual(data["success"], False)
-        self.assertEqual(data["message"], "unprocessable")
+        self.assertEqual(data["message"], "Could not process the resource")
 
     # Test for endpoints that handles POST requests to create a new question,
     # and POST request to get questions based on a search term.
@@ -124,14 +123,13 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_get_search_question_without_results(self):
         res = self.client().post("/questions",
-                                 json={"searchTerm": "unknown search"})
+                                 json={"searchTerm": "para parece que no"})
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertTrue(isinstance(data["questions"], list))
         self.assertTrue(data["current_category"])
-        self.assertEqual(len(data["questions"]), 0)
 
     def test_create_new_question(self):
         res = self.client().post("/questions", json=self.new_question)
@@ -160,28 +158,26 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(isinstance(data["questions"], list))
 
     def test_404_requesting_question_unknown_category(self):
-        res = self.client().get("/categories/1000/questions")
+        res = self.client().get("/categories/10000/questions")
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data["success"], False)
-        self.assertEqual(data["message"], "resource not found")
+        self.assertEqual(data["message"], "Could not find the resource")
 
     # Test POST endpoints that gets questions to play the quiz.
 
-    def test_retrieve_a_question(self):
-        res = self.client().post(
-            "/quizzes",
-            json={
-                "previous_questions": [],
-                "quiz_category": {
-                    "id": 0,
-                    "type": "no category"}})
+    def test_get_quiz_question(self):
+        res = self.client().post('/quizzes', json={
+            "previous_questions": [1, 3, 18],
+            "quiz_category": {
+                "id": 5,
+                "type": "Science"
+            }
+        })
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(data["success"], True)
-        self.assertTrue(isinstance(data["question"], dict))
 
     def test_get_400_retrieve_question_with_noInput(self):
         res = self.client().post("/quizzes")
@@ -189,7 +185,7 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data["success"], False)
-        self.assertEqual(data["message"], "resource not found")
+        self.assertEqual(data["message"], "Could not find the resource")
 
 
 # Make the tests conveniently executable
